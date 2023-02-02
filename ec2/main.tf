@@ -14,6 +14,10 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
+data "template_file" "user_data" {
+  template = "${file("/home/kl/terraform/ec2/install.sh")}"
+}
+
 variable "instance_type" {
   default = "t2.micro"
 }
@@ -26,14 +30,7 @@ resource "aws_instance" "web_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
   key_name = "id_rsa.pub"
-  user_data = <<EOF
-		      #! /bin/bash
-          sudo apt-get update
-		      sudo apt-get install -y apache2
-		      sudo systemctl start apache2
-		      sudo systemctl enable apache2
-		      echo "<h1>Deployed via Terraform</h1>" | sudo tee /var/www/html/index.html
-	EOF
+  user_data = "${data.template_file.user_data.rendered}"
 }
 
 resource "aws_key_pair" "webserver-key" {
